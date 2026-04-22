@@ -1,0 +1,150 @@
+from flask import Flask, request, jsonify, render_template, send_file, Response
+from flask_cors import CORS
+import subprocess
+import os
+import uuid
+import json
+import time
+from werkzeug.utils import secure_filename
+import threading
+from datetime import datetime
+
+app = Flask(__name__)
+CORS(app)
+
+# Config
+UPLOAD_FOLDER = 'uploads'
+RESULTS_FOLDER = 'results'
+WORDLISTS_FOLDER = 'wordlists'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(RESULTS_FOLDER, exist_ok=True)
+os.makedirs(WORDLISTS_FOLDER, exist_ok=True)
+
+# Active cracking sessions
+sessions = {}
+
+class Cracker:
+    def __init__(self, session_id, handshake_path, wordlist_path=""):
+        self.session_id = session_id
+        self.handshake_path = handshake_path
+        self.wordlist_path = wordlist_path
+        self.process = None
+        self.status = "starting"
+        self.start_time = time.time()
+        
+    def start(self):
+        hccapx_path = f"uploads/{self.session_id}.hccapx"
+        
+        # Convert to Hashcat format
+        subprocess.run([
+            'cap2hccapx', 
+            self.handshake_path, 
+            hccapx_path
+        ], capture_output=True)
+        
+        cmd = [
+            'hashcat',
+            '-m', '22000',  # WPA/WPA2
+            '-a', '0',      # Dictionary
+            hccapx_path,
+            self.wordlist_path or f"{WORDLISTS_FOLDER}/rockyou-small.txt",
+            f'--potfile-path={RESULTS_FOLDER}/{self.session_id}.pot',
+            '--status',
+            '--status-timer=10',
+            '-w', '4',
+            '-O'
+        ]
+        
+        self.process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+        self.status = "cracking"
+        threading.Thread(target=self.monitor, daemon=True).start()
+    
+    def monitor(self):
+        if self.process:
+            self.process.wait()
+            self.status = "completed"
+    
+    def get_stats(self):
+        potfile = f"{RESULTS_FOLDER}/{self.session_id}.pot"
+        if os.path.exists(potfile):
+            with open(potfile, 'r') as f:
+                content = f.read()
+                if content.strip():
+                    return {"cracked": True, "passwords": content.strip().split('\n')}
+        return {"cracked": False}
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/upload', methods=['POST'])
+def upload():
+    if 'handshake' not in request.files:
+        return jsonify({'error': 'No handshake file'}), 400
+    
+    file = request.files['handshake']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    session_id = str(uuid.uuid4())[:8]
+    handshake_path = os.path.join(UPLOAD_FOLDER, f"{session_id}.cap")
+    file.save(handshake_path)
+    
+    wordlist = request.files.get('wordlist')
+    wordlist_path = ""
+    if wordlist:
+        wordlist_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_wl.txt")
+        wordlist.save(wordlist_path)
+    
+    cracker = Cracker(session_id, handshake_path, wordlist_path)
+    cracker.start()
+    sessions[session_id] = cracker
+    
+    return jsonify({
+        'session_id': session_id,
+        'status': 'started',
+        'message': f'Cracking started with {wordlist_path or "default wordlist"}'
+    })
+
+@app.route('/api/status/<session_id>')
+def status(session_id):
+    if session_id not in sessions:
+        return jsonify({'error': 'Session not found'}), 404
+    
+    cracker = sessions[session_id]
+    stats = cracker.get_stats()
+    
+    return jsonify({
+        'session_id': session_id,
+        'status': cracker.status,
+        'uptime': int(time.time() - cracker.start_time),
+        'cracked': stats['cracked'],
+        'passwords': stats.get('passwords', [])
+    })
+
+@app.route('/api/download/<session_id>')
+def download(session_id):
+    potfile = f"{RESULTS_FOLDER}/{session_id}.pot"
+    if os.path.exists(potfile):
+        return send_file(potfile, as_attachment=True, download_name=f"wifi_{session_id}_results.txt")
+    return jsonify({'error': 'No results yet'}), 404
+
+@app.route('/api/sessions')
+def list_sessions():
+    active = []
+    for sid, cracker in sessions.items():
+        stats = cracker.get_stats()
+        active.append({
+            'id': sid,
+            'status': cracker.status,
+            'cracked': stats['cracked']
+        })
+    return jsonify({'sessions': active})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)

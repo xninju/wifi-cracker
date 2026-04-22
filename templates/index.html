@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Pentest Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 WiFi Security Tester</h1>
+            <p>Upload .cap/.pcap handshake files for authorized pentesting</p>
+        </header>
+
+        <div class="upload-section">
+            <form id="crackForm" enctype="multipart/form-data">
+                <div class="file-inputs">
+                    <label>
+                        <span>Handshake (.cap/.pcap)</span>
+                        <input type="file" name="handshake" accept=".cap,.pcap,.hccapx" required>
+                    </label>
+                    <label>
+                        <span>Wordlist (.txt) - Optional</span>
+                        <input type="file" name="wordlist" accept=".txt">
+                    </label>
+                </div>
+                <button type="submit">🚀 Start Cracking</button>
+            </form>
+        </div>
+
+        <div id="status" class="terminal hidden">
+            <div class="terminal-header">
+                <span id="sessionInfo">Session: waiting...</span>
+                <span id="uptime">00:00:00</span>
+            </div>
+            <div id="terminalOutput" class="terminal-body"></div>
+        </div>
+
+        <div id="results" class="results-section hidden"></div>
+        <div id="sessions" class="sessions-grid"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

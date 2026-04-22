@@ -1,0 +1,107 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: 'Courier New', monospace; 
+    background: #0a0a0a; 
+    color: #00ff41; 
+    padding: 20px; 
+    min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+header h1 { 
+    font-size: 2.5em; 
+    background: linear-gradient(45deg, #00ff41, #00cc33); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+}
+.upload-section { 
+    background: #1a1a1a; 
+    padding: 30px; 
+    border-radius: 10px; 
+    border: 1px solid #00ff41; 
+    margin: 30px 0;
+}
+.file-inputs { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+label { 
+    flex: 1; min-width: 250px; 
+    border: 2px dashed #00ff41; 
+    padding: 20px; 
+    border-radius: 8px; 
+    cursor: pointer;
+    transition: all 0.3s;
+}
+label:hover { background: #00ff41; color: #000; }
+input[type=file] { 
+    position: absolute; opacity: 0; width: 1px; height: 1px;
+}
+button { 
+    background: #00ff41; 
+    color: #000; 
+    border: none; 
+    padding: 15px 40px; 
+    font-size: 1.1em; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+button:hover { transform: scale(1.05); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.terminal { 
+    background: #000; 
+    border: 2px solid #00ff41; 
+    border-radius: 10px; 
+    margin: 20px 0; 
+    overflow: hidden;
+}
+.terminal-header { 
+    background: #001a00; 
+    padding: 10px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: bold;
+}
+.terminal-body { 
+    height: 400px; 
+    padding: 20px; 
+    overflow-y: auto; 
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+.hidden { display: none !important; }
+
+.results-section { 
+    background: #001a00; 
+    border: 2px solid #00ff4122; 
+    padding: 30px; 
+    border-radius: 10px; 
+    margin: 20px 0;
+}
+.password { 
+    background: #00ff41; 
+    color: #000; 
+    padding: 15px; 
+    border-radius: 8px; 
+    font-size: 1.3em; 
+    font-weight: bold; 
+    margin: 10px 0;
+    word-break: break-all;
+}
+
+.sessions-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+    gap: 20px; 
+    margin-top: 30px;
+}
+.session-card { 
+    background: #1a1a1a; 
+    border: 1px solid #333; 
+    padding: 20px; 
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+.session-card:hover { border-color: #00ff41; }
+.status-running { color: #ffaa00; }
+.status-cracked { color: #00ff41; }
